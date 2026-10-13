@@ -16,20 +16,8 @@ pub(crate) trait DistinguishedDecoder<E, T> {
     fn decode_distinguished();
 }
 
-pub(crate) trait BorrowDecoder<E, T> {
-    fn borrow_decode();
-}
-
-pub(crate) trait DistinguishedBorrowDecoder<E, T> {
-    fn borrow_decode_distinguished();
-}
-
 pub(crate) trait ValueDecoder<E, T> {
     fn decode_value();
-}
-
-pub(crate) trait ValueBorrowDecoder<E, T> {
-    fn borrow_decode_value();
 }
 
 // both are a similar time regression
@@ -45,12 +33,3 @@ where
     }
 }
 
-
-impl<'a, T, Estart, Eend> ValueBorrowDecoder<(Estart, Eend), Range<T>> for ()
-where
-    (): BorrowDecoder<Estart, T>
-{
-    fn borrow_decode_value(
-    ) {
-    }
-}
