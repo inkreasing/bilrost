@@ -4,6 +4,3 @@
 
 pub(crate) mod encoding;
 
-use crate::encoding::{Canonicity};
-pub type DecodeError = ();
-

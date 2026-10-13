@@ -2,101 +2,53 @@ use crate::encoding::{
     EmptyState, ForOverwrite,
 };
 use crate::encoding::{
-    decoding_modes,
-    BorrowDecoder, Capped, DecodeContext, Decoder,
+    BorrowDecoder, Decoder,
     DistinguishedBorrowDecoder,
-    Encoder,
     DistinguishedDecoder,
-    GeneralPacked, RestrictedDecodeContext,
     ValueBorrowDecoder, ValueDecoder,
 };
-use crate::{Canonicity, DecodeError};
 
-pub struct Unpacked<E = GeneralPacked>(E);
-
-macro_rules! define_decoders {
-    (
-        mode: $mode:ident,
-        relaxed: $relaxed:ident::$relaxed_method:ident,
-        relaxed_value: $relaxed_value:ident::$relaxed_value_method:ident,
-        relaxed_field: $relaxed_field:ident::$relaxed_field_method:ident,
-        distinguished: $distinguished:ident::$distinguished_method:ident,
-    ) => {
-
-        /// Decodes an array value from either unpacked or packed representation. If there are not
-        /// exactly the expected number of fields the value is considered to be invalid.
-        #[inline]
-        pub(super) fn decode_array_either_repr<T, const N: usize, E>(
-            _arr: &mut [T; N],
-        ) -> Result<(), DecodeError>
-        where
-            (): $relaxed_value <E, T>,
-        {
-            Ok(())
-        }
-
-        /// Decodes an array value from either packed or unpacked in distinguished mode. If there
-        /// are not exactly the expected number of fields the value is considered to be invalid.
-        #[inline]
-        pub(super) fn decode_distinguished_array_either_repr<T, const N: usize, E>(
-            _arr: &mut [T; N],
-        ) -> Result<Canonicity, DecodeError>
-        where
-            (): $relaxed_value <E, T>
-        {
-            todo!()
-        }
-    };
-}
+pub struct Unpacked<E>(E);
 
 pub(crate) mod owned {
     use super::*;
-    decoding_modes::__invoke!(define_decoders, owned);
+    pub(super) fn decode_array_either_repr<T, E>()
+    where
+        (): ValueDecoder<E, T>,
+    {}
 }
-
-pub(crate) mod borrowed {
-    use super::*;
-    decoding_modes::__invoke!(define_decoders, borrowed);
-}
-
-impl<T, const N: usize, E> Encoder<Unpacked<E>, [T; N]> for () {}
-
-impl<T, const N: usize, E> Encoder<Unpacked<E>, Option<[T; N]>> for () {}
 
 macro_rules! impl_decoders {
     (
         mode: $mode:ident,
         relaxed: $relaxed:ident::$relaxed_method:ident,
         relaxed_value: $relaxed_value:ident::$relaxed_value_method:ident,
-        relaxed_field: $relaxed_field:ident::$relaxed_field_method:ident,
         distinguished: $distinguished:ident::$distinguished_method:ident,
     ) => {
 
         impl<T, const N: usize, E>
         $relaxed <Unpacked<E>, [T; N]> for ()
         where
-            (): $relaxed_value <E, T> + EmptyState<E, [T; N]>,
+            (): $relaxed_value <E, T>
+            + EmptyState<E, [T; N]>,
         {
             #[inline]
             fn $relaxed_method(
-                value: &mut [T; N],
-            ) -> Result<(), DecodeError> {
+            ) {
                 // time regression
-                $mode::decode_array_either_repr(value)
+                // specifying the generic parameters to T or E reduces the slowdown
+                $mode::decode_array_either_repr::<_, _>()
             }
         }
-
 
         impl<T, const N: usize, E>
         $relaxed <Unpacked<E>, Option<[T; N]>> for ()
         where
-            (): $relaxed_value <E, T> + ForOverwrite<E, [T; N]>,
+            (): ForOverwrite<E, [T; N]>,
         {
             #[inline]
             fn $relaxed_method(
-                _value: &mut Option<[T; N]>,
-            ) -> Result<(), DecodeError> {
-                Ok(())
+            ) {
             }
         }
 
@@ -108,16 +60,32 @@ macro_rules! impl_decoders {
         {
             #[inline]
             fn $distinguished_method(
-                value: &mut Option<[T; N]>,
-            ) -> Result<Canonicity, DecodeError> {
+            ) {
                 // time regression
-                $mode::decode_distinguished_array_either_repr(
-                    value.get_or_insert_with(<() as ForOverwrite::<E, _>>::for_overwrite),
-                )
+                $mode::decode_array_either_repr::<_, _>()
             }
         }
     };
 }
 
-decoding_modes::__invoke!(impl_decoders, owned);
-decoding_modes::__invoke!(impl_decoders, borrowed);
+impl_decoders!(
+    mode: owned,
+    relaxed: Decoder::decode,
+    relaxed_value: ValueDecoder::decode_value,
+    distinguished: DistinguishedDecoder::decode_distinguished,
+);
+
+// this is a big part of the slowdown, but it is probably interesting on its own
+impl_decoders!(
+    mode: borrowed,
+    relaxed: BorrowDecoder::borrow_decode,
+    relaxed_value: ValueBorrowDecoder::borrow_decode_value,
+    distinguished: DistinguishedBorrowDecoder::borrow_decode_distinguished,
+);
+pub(crate) mod borrowed {
+    use super::*;
+    pub(super) fn decode_array_either_repr<T, E>()
+    where
+        (): ValueBorrowDecoder<E, T>,
+    {}
+}

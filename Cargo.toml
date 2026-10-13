@@ -28,7 +28,6 @@ edition = "2021"
 rust-version = "1.68"
 
 [dependencies]
-bytes = { version = "^1", default-features = false }
 
 [features]
 default = []

@@ -1,6 +1,6 @@
 target/
 Cargo.lock
 /coverage/
-
+liblib.rlib
 .DS_Store
 /.idea/
