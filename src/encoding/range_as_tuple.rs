@@ -14,22 +14,20 @@ impl<T, Estart, Eend> ValueDecoder<(Estart, Eend), Range<T>> for ()
 where
     (): Decoder<Estart, T>
 {
-    fn decode_value<B: Buf + ?Sized>(
+    fn decode_value(
         _value: &mut Range<T>,
-        _buf: Capped<B>,
     ) -> Result<(), DecodeError> {
         Ok(())
     }
 }
 
 
-impl<'a, T, Estart, Eend> ValueBorrowDecoder<'a, (Estart, Eend), Range<T>> for ()
+impl<'a, T, Estart, Eend> ValueBorrowDecoder<(Estart, Eend), Range<T>> for ()
 where
-    (): BorrowDecoder<'a, Estart, T>
+    (): BorrowDecoder<Estart, T>
 {
     fn borrow_decode_value(
         _value: &mut Range<T>,
-        _buf: Capped<&'a [u8]>,
     ) -> Result<(), DecodeError> {
         Ok(())
     }

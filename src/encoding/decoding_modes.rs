@@ -35,34 +35,22 @@ macro_rules! other_macro {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __invoke {
-    ($($other_macro:ident)::+, owned $(, $($more_args:tt)*)?) => {
+    ($($other_macro:ident)::+, owned) => {
         $($other_macro)::*!(
             mode: owned,
             relaxed: Decoder::decode,
             relaxed_value: ValueDecoder::decode_value,
             relaxed_field: FieldDecoder::decode_field,
             distinguished: DistinguishedDecoder::decode_distinguished,
-            distinguished_value: DistinguishedValueDecoder::decode_value_distinguished,
-            distinguished_field: DistinguishedFieldDecoder::decode_field_distinguished,
-            buf_ty: __B,
-            impl_buf_ty: impl $crate::bytes::Buf + ?Sized,
-            buf_generic: (<__B: $crate::bytes::Buf + ?Sized>),
-            $($($more_args)*)?
         );
     };
-    ($($other_macro:ident)::+, borrowed $(, $($more_args:tt)*)?) => {
+    ($($other_macro:ident)::+, borrowed) => {
         $($other_macro)::*!(
             mode: borrowed,
             relaxed: BorrowDecoder::borrow_decode,
             relaxed_value: ValueBorrowDecoder::borrow_decode_value,
             relaxed_field: FieldBorrowDecoder::borrow_decode_field,
             distinguished: DistinguishedBorrowDecoder::borrow_decode_distinguished,
-            distinguished_value: DistinguishedValueBorrowDecoder::borrow_decode_value_distinguished,
-            distinguished_field: DistinguishedFieldBorrowDecoder::borrow_decode_field_distinguished,
-            buf_ty: &'__a [u8],
-            impl_buf_ty: &'__a [u8],
-            lifetime: '__a,
-            $($($more_args)*)?
         );
     };
 }
